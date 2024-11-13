@@ -37,6 +37,12 @@
 /processorParam:TextureFormat=Color
 /build:invader.png
 
+#begin invaderDeath.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:invaderDeath.wav
+
 #begin player.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -48,4 +54,10 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:player.png
+
+#begin playerShoot.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:playerShoot.wav
 

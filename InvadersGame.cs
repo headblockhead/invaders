@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Security.Cryptography;
 
 namespace Invaders
@@ -18,7 +20,7 @@ namespace Invaders
         public Direction MovementDirection;
         public int Speed;
         public Vector2 Position;
-        public bool FiringWeapon;
+        public bool FiredWeapon;
         public Rectangle WindowBounds;
         public Player(int speed, Rectangle windowbounds)
         {
@@ -44,15 +46,21 @@ namespace Invaders
         private Random random = new Random();
         public Vector2 Position = Vector2.Zero;
         public Vector2 Velocity = Vector2.Zero;
+        public Rectangle Bounds;
         public Rectangle WindowBounds;
        public Invader(Vector2 position, Vector2 velocity, Rectangle windowbounds)
         {
             WindowBounds = windowbounds;
             Position = position;
             Velocity = velocity;
+            Bounds = new Rectangle();
+            Bounds.Width = 16;
+            Bounds.Height = 16;
+            Bounds.Location = new Point((int)Position.X, (int)Position.Y);
         }
         public void Update()
         {
+            Bounds.Location = new Point((int)Position.X, (int)Position.Y);
             Position += Velocity * new Vector2((float)random.NextDouble(), (float)random.NextDouble());
             if (Position.X < 0)
             {
@@ -76,6 +84,35 @@ namespace Invaders
             }
         }
     }
+
+    public class Bullet
+    {
+        public Vector2 Position;
+        public Vector2 Velocity;
+        public Rectangle Bounds;
+        public Rectangle WindowBounds;
+        public bool shouldDie;
+
+        public Bullet(Vector2 position, Vector2 velocity,Rectangle windowbounds) {
+            Position = position;
+            Velocity = velocity;
+            WindowBounds = windowbounds;
+            shouldDie = false;
+            Bounds = new Rectangle();
+            Bounds.Width = 16;
+            Bounds.Height = 32;
+            Bounds.Location = new Point((int)Position.X, (int)Position.Y);
+        }
+        public void Update()
+        {
+            Bounds.Location = new Point((int)Position.X, (int)Position.Y);
+            Position += Velocity;
+            if (Position.Y < 0)
+            {
+                shouldDie = true;
+            }
+        }
+        }
     public class InvadersGame : Game
     {
         enum State
@@ -93,10 +130,14 @@ namespace Invaders
 
         Player player;
         List<Invader> invaders = new List<Invader>();
+        List<Bullet> bullets = new List<Bullet>();
 
         Texture2D invaderTexture;
         Texture2D playerTexture;
-        Texture2D beamTexture;
+        Texture2D bulletTexture;
+
+        SoundEffect invaderDeath;
+        SoundEffect playerShoot;
 
         int score = 0;
 
@@ -128,7 +169,10 @@ namespace Invaders
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             invaderTexture = Content.Load<Texture2D>("invader");
             playerTexture = Content.Load<Texture2D>("player");
-            beamTexture = Content.Load<Texture2D>("bullet");
+            bulletTexture = Content.Load<Texture2D>("bullet");
+
+            invaderDeath = Content.Load<SoundEffect>("invaderDeath");
+            playerShoot = Content.Load<SoundEffect>("playerShoot");
         }
 
         public void UpdateGame()
@@ -141,8 +185,25 @@ namespace Invaders
                 invaders[i].Update();
             }
 
+            for (int i = 0;i < bullets.Count; i++)
+            {
+                bullets[i].WindowBounds = Window.ClientBounds;
+                bullets[i].Update();
+                for (int j = 0; j < invaders.Count; j++)
+                {
+                    if (invaders[j].Bounds.Intersects(bullets[i].Bounds))
+                    {
+                        invaders.RemoveAt(j);
+                        invaderDeath.Play();
+                    }
+                }
+                if (bullets[i].shouldDie)
+                {
+                    bullets.RemoveAt(i);
+                }
+            }
+
             player.MovementDirection = Player.Direction.None;
-            player.FiringWeapon = false;
             if (Keyboard.GetState().IsKeyDown(Keys.A))
             {
                 player.MovementDirection = Player.Direction.Left;
@@ -153,14 +214,15 @@ namespace Invaders
             }
             if (Keyboard.GetState().IsKeyDown(Keys.Space))
             {
-                player.FiringWeapon = true;
-                for (int i = 0; i < invaders.Count; i++)
+                if (!player.FiredWeapon)
                 {
-                    if ((invaders[i].Position.X >= player.Position.X + 32) && (invaders[i].Position.X <= player.Position.X + 96) && random.Next(0, 4) == 1)
-                    {
-                        invaders.RemoveAt(i);
-                    }
+                    playerShoot.Play();
+                    player.FiredWeapon = true;
+                    bullets.Add(new Bullet(new Vector2(player.Position.X+56, player.Position.Y), new Vector2(0, -32), Window.ClientBounds));
                 }
+            } else
+            {
+                player.FiredWeapon = false;
             }
             player.Update();
         }
@@ -215,11 +277,11 @@ namespace Invaders
                         {
                             _spriteBatch.Draw(invaderTexture, invaders[i].Position, Color.White);
                         }
-                        _spriteBatch.Draw(playerTexture, player.Position, Color.White);
-                        if (player.FiringWeapon)
+                        for (int i = 0; i < bullets.Count; i++)
                         {
-                            _spriteBatch.Draw(beamTexture, new Vector2(player.Position.X + 56, Window.ClientBounds.Height - 64), Color.White);
+                            _spriteBatch.Draw(bulletTexture, bullets[i].Position, Color.White);
                         }
+                        _spriteBatch.Draw(playerTexture, player.Position, Color.White);
                         break;
                     }
             }
