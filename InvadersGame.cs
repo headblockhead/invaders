@@ -92,8 +92,9 @@ namespace Invaders
         public Rectangle Bounds;
         public Rectangle WindowBounds;
         public bool shouldDie;
-
-        public Bullet(Vector2 position, Vector2 velocity,Rectangle windowbounds) {
+        public bool Explodes;
+        public Bullet(Vector2 position, Vector2 velocity,Rectangle windowbounds, bool explodes = false)
+        {
             Position = position;
             Velocity = velocity;
             WindowBounds = windowbounds;
@@ -102,6 +103,7 @@ namespace Invaders
             Bounds.Width = 16;
             Bounds.Height = 32;
             Bounds.Location = new Point((int)Position.X, (int)Position.Y);
+            Explodes = explodes;
         }
         public void Update()
         {
@@ -135,8 +137,10 @@ namespace Invaders
         Texture2D invaderTexture;
         Texture2D playerTexture;
         Texture2D bulletTexture;
+        Texture2D explosionTexture;
 
         SoundEffect invaderDeath;
+        SoundEffect explosion;
         SoundEffect playerShoot;
 
         int score = 0;
@@ -157,7 +161,7 @@ namespace Invaders
             player = new Player(8, Window.ClientBounds);
             for (int i = 0; i < 2000; i++)
             {
-                invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16))*16, (i % Window.ClientBounds.Width/16) * 4),new Vector2(1f, 2f), Window.ClientBounds));
+                invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16))*16, (i % Window.ClientBounds.Width/16) * 4),new Vector2(2f, 0.4f), Window.ClientBounds));
             }
 
             Window.AllowUserResizing = true;
@@ -173,6 +177,7 @@ namespace Invaders
 
             invaderDeath = Content.Load<SoundEffect>("invaderDeath");
             playerShoot = Content.Load<SoundEffect>("playerShoot");
+            explosion = Content.Load<SoundEffect>("explosion");
         }
 
         public void UpdateGame()
@@ -195,6 +200,11 @@ namespace Invaders
                     {
                         invaders.RemoveAt(j);
                         invaderDeath.Play();
+                        if (bullets[i].Explodes)
+                        {
+                            bullets[i].shouldDie = true;
+                            explosion.Play();
+                        }
                     }
                 }
                 if (bullets[i].shouldDie)
@@ -218,9 +228,19 @@ namespace Invaders
                 {
                     playerShoot.Play();
                     player.FiredWeapon = true;
-                    bullets.Add(new Bullet(new Vector2(player.Position.X+56, player.Position.Y), new Vector2(0, -32), Window.ClientBounds));
+                    bullets.Add(new Bullet(new Vector2(player.Position.X+56, player.Position.Y), new Vector2(0, -24), Window.ClientBounds));
                 }
-            } else
+            } 
+            if (Keyboard.GetState().IsKeyDown(Keys.B))
+            {
+                if (!player.FiredWeapon)
+                {
+                    playerShoot.Play();
+                    player.FiredWeapon = true;
+                    bullets.Add(new Bullet(new Vector2(player.Position.X + 56, player.Position.Y), new Vector2(0, -24), Window.ClientBounds, true));
+                }
+            }
+            if (!Keyboard.GetState().IsKeyDown(Keys.B) && !Keyboard.GetState().IsKeyDown(Keys.Space))
             {
                 player.FiredWeapon = false;
             }
