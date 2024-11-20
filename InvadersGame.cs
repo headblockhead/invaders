@@ -47,14 +47,16 @@ namespace Invaders
         public Vector2 Position = Vector2.Zero;
         public Vector2 Velocity = Vector2.Zero;
         public bool shouldDie = false;
+        public bool Mutated = false;
         public Rectangle Bounds;
         public Rectangle WindowBounds;
-       public Invader(Vector2 position, Vector2 velocity, Rectangle windowbounds)
+       public Invader(Vector2 position, Vector2 velocity, Rectangle windowbounds, bool mutated)
         {
             WindowBounds = windowbounds;
             Position = position;
             Velocity = velocity;
             Bounds = new Rectangle();
+            Mutated = mutated;
             Bounds.Width = 16;
             Bounds.Height = 16;
             Bounds.Location = new Point((int)Position.X, (int)Position.Y);
@@ -191,7 +193,7 @@ namespace Invaders
             player = new Player(8, Window.ClientBounds);
             for (int i = 0; i < 2000; i++)
             {
-                invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16))*16, (i % Window.ClientBounds.Width/16) * 4),new Vector2(2f, 0.4f), Window.ClientBounds));
+                invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16))*16, (i % Window.ClientBounds.Width/16) * 4),new Vector2(2f, 0.4f), Window.ClientBounds, false));
             }
 
             Window.AllowUserResizing = true;
@@ -231,10 +233,18 @@ namespace Invaders
                 }
                 for (int j = 0; j < invaders.Count; j++)
                 {
-                    if (invaders[j].Bounds.Intersects(explosions[i].Bounds))
+                    if (invaders[j].Bounds.Intersects(explosions[i].Bounds) && !invaders[j].Mutated)
                     {
-                        invaders[j].shouldDie = true;
-                        invaderDeath.Play();
+                        // TODO: mutate
+                        if (random.Next(0, 12) == 0)
+                        {
+                            invaders.Add(new Invader(explosions[i].Position, new Vector2(4f, 0.6f), Window.ClientBounds, true));
+                        }
+                        else
+                        {
+                            invaders[j].shouldDie = true;
+                            invaderDeath.Play();
+                        }
                     }
                     }
                 }
@@ -247,7 +257,7 @@ namespace Invaders
                 {
                     if (invaders[j].Bounds.Intersects(bullets[i].Bounds))
                     {
-                        invaders[i].shouldDie = true;
+                        invaders[j].shouldDie = true;
                         invaderDeath.Play();
                         if (bullets[i].Explodes)
                         {
@@ -359,7 +369,7 @@ namespace Invaders
                     {
                         for (int i = 0; i < invaders.Count; i++)
                         {
-                            _spriteBatch.Draw(invaderTexture, invaders[i].Position, Color.White);
+                            _spriteBatch.Draw(invaderTexture, invaders[i].Position, invaders[i].Mutated? new Color(255, 64, 255, 232) : Color.White);
                         }
                         for (int i = 0; i < bullets.Count; i++)
                         {
