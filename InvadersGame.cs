@@ -46,6 +46,7 @@ namespace Invaders
         private Random random = new Random();
         public Vector2 Position = Vector2.Zero;
         public Vector2 Velocity = Vector2.Zero;
+        public bool shouldDie = false;
         public Rectangle Bounds;
         public Rectangle WindowBounds;
        public Invader(Vector2 position, Vector2 velocity, Rectangle windowbounds)
@@ -115,6 +116,34 @@ namespace Invaders
             }
         }
         }
+
+    public class Explosion
+    {
+        public Vector2 Position;
+        public Rectangle Bounds;
+        private int timer;
+        public int ExplosionSpeed;
+        public bool Exploding = true;
+        public Explosion(Vector2 position, int explosionSpeed)
+        {
+            Position = position;
+            ExplosionSpeed = explosionSpeed;
+            Bounds = new Rectangle();
+            Bounds.Width = 1;
+            Bounds.Height = 1;
+            Bounds.Location = new Point((int)Position.X, (int)Position.Y);
+        }
+        public void Update() {
+            timer++;
+            Bounds.Width+=ExplosionSpeed;
+            Bounds.Height+= ExplosionSpeed;
+            Bounds.Location = new Point((int)Position.X- Bounds.Width/2, (int)Position.Y - Bounds.Width / 2);
+            if (timer > 64)
+            {
+                Exploding = false;
+            }
+        }
+    }
     public class InvadersGame : Game
     {
         enum State
@@ -133,6 +162,7 @@ namespace Invaders
         Player player;
         List<Invader> invaders = new List<Invader>();
         List<Bullet> bullets = new List<Bullet>();
+        List<Explosion> explosions = new List<Explosion>();
 
         Texture2D invaderTexture;
         Texture2D playerTexture;
@@ -172,6 +202,7 @@ namespace Invaders
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             invaderTexture = Content.Load<Texture2D>("invader");
+            explosionTexture = Content.Load<Texture2D>("explosionImage");
             playerTexture = Content.Load<Texture2D>("player");
             bulletTexture = Content.Load<Texture2D>("bullet");
 
@@ -190,6 +221,24 @@ namespace Invaders
                 invaders[i].Update();
             }
 
+            for (int i = 0; i < explosions.Count; i++)
+            {
+                explosions[i].Update();
+                if (!explosions[i].Exploding)
+                {
+                   explosions.RemoveAt(i);
+                    break;
+                }
+                for (int j = 0; j < invaders.Count; j++)
+                {
+                    if (invaders[j].Bounds.Intersects(explosions[i].Bounds))
+                    {
+                        invaders[j].shouldDie = true;
+                        invaderDeath.Play();
+                    }
+                    }
+                }
+
             for (int i = 0;i < bullets.Count; i++)
             {
                 bullets[i].WindowBounds = Window.ClientBounds;
@@ -198,18 +247,34 @@ namespace Invaders
                 {
                     if (invaders[j].Bounds.Intersects(bullets[i].Bounds))
                     {
-                        invaders.RemoveAt(j);
+                        invaders[i].shouldDie = true;
                         invaderDeath.Play();
                         if (bullets[i].Explodes)
                         {
                             bullets[i].shouldDie = true;
                             explosion.Play();
+                            explosions.Add(new Explosion(bullets[i].Position, 3));
                         }
                     }
                 }
                 if (bullets[i].shouldDie)
                 {
                     bullets.RemoveAt(i);
+                }
+            }
+
+            bool removedOne = true;
+            while (removedOne)
+            {
+                removedOne = false;
+                for (int i = 0; i < invaders.Count; i++)
+                {
+                    if (invaders[i].shouldDie)
+                    {
+                        invaders.RemoveAt(i);
+                        removedOne = true;
+                        break;
+                    }
                 }
             }
 
@@ -279,7 +344,6 @@ namespace Invaders
                         break;
                     }
             }
-            
 
             _graphics.ApplyChanges();
             base.Update(gameTime);
@@ -300,6 +364,10 @@ namespace Invaders
                         for (int i = 0; i < bullets.Count; i++)
                         {
                             _spriteBatch.Draw(bulletTexture, bullets[i].Position, Color.White);
+                        }
+                        for (int i = 0; i < explosions.Count; i++)
+                        {
+                            _spriteBatch.Draw(explosionTexture, explosions[i].Bounds, Color.White);
                         }
                         _spriteBatch.Draw(playerTexture, player.Position, Color.White);
                         break;
