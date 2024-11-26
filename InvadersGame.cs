@@ -152,6 +152,7 @@ namespace Invaders
         {
             Menu,
             Game,
+            LevelSplash,
             GameOver
         }
 
@@ -176,6 +177,14 @@ namespace Invaders
         SoundEffect playerShoot;
 
         int score = 0;
+        int level = 0;
+        int lives = 5;
+        int[] levels = {
+            128,
+            256,
+            512,
+            4096
+        };
 
         public InvadersGame()
         {
@@ -191,7 +200,7 @@ namespace Invaders
             _graphics.ApplyChanges();
 
             player = new Player(8, Window.ClientBounds);
-            for (int i = 0; i < 2000; i++)
+            for (int i = 0; i < levels[level]; i++)
             {
                 invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16))*16, (i % Window.ClientBounds.Width/16) * 4),new Vector2(2f, 0.4f), Window.ClientBounds, false));
             }
@@ -229,22 +238,19 @@ namespace Invaders
                 if (!explosions[i].Exploding)
                 {
                    explosions.RemoveAt(i);
-                    break;
+                   break;
                 }
                 for (int j = 0; j < invaders.Count; j++)
                 {
                     if (invaders[j].Bounds.Intersects(explosions[i].Bounds) && !invaders[j].Mutated)
                     {
-                        // TODO: mutate
-                        if (random.Next(0, 12) == 0)
+                        if (random.Next(0, 128) == 0)
                         {
-                            invaders.Add(new Invader(explosions[i].Position, new Vector2(4f, 0.6f), Window.ClientBounds, true));
+                            Vector2 newPosition = new Vector2(explosions[i].Position.X + random.Next(-explosions[i].Bounds.Width/2, explosions[i].Bounds.Width/2), explosions[i].Position.Y + random.Next(-explosions[i].Bounds.Height/2, explosions[i].Bounds.Height/2));
+                            invaders.Add(new Invader(newPosition, new Vector2(4f, 0.5f), Window.ClientBounds, true));
                         }
-                        else
-                        {
-                            invaders[j].shouldDie = true;
-                            invaderDeath.Play();
-                        }
+                        invaders[j].shouldDie = true;
+                        invaderDeath.Play();
                     }
                     }
                 }
@@ -257,14 +263,22 @@ namespace Invaders
                 {
                     if (invaders[j].Bounds.Intersects(bullets[i].Bounds))
                     {
-                        invaders[j].shouldDie = true;
-                        invaderDeath.Play();
                         if (bullets[i].Explodes)
                         {
-                            bullets[i].shouldDie = true;
+                            if (!invaders[j].Mutated)
+                            {
+                                invaders[j].shouldDie = true;
+                                invaderDeath.Play();
+                            }
                             explosion.Play();
                             explosions.Add(new Explosion(bullets[i].Position, 3));
                         }
+                        else
+                        {
+                            invaders[j].shouldDie = true;
+                            invaderDeath.Play();
+                        }
+                        bullets[i].shouldDie = true;
                     }
                 }
                 if (bullets[i].shouldDie)
@@ -322,6 +336,8 @@ namespace Invaders
             player.Update();
         }
 
+        int splashUpdates = 0;
+        int lastLevel = -1;
         protected override void Update(GameTime gameTime)
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
@@ -332,6 +348,16 @@ namespace Invaders
                     {
                         if (Keyboard.GetState().IsKeyDown(Keys.S))
                         {
+                            gameState = State.LevelSplash;
+                        }
+                        break;
+                    }
+                case State.LevelSplash:
+                    {
+                        splashUpdates++;
+                        if (splashUpdates > 2000)
+                        {
+                            lastLevel = level;
                             gameState = State.Game;
                         }
                         break;
@@ -339,6 +365,15 @@ namespace Invaders
                 case State.Game:
                 {
                         UpdateGame();
+                        if (lives == 0)
+                        {
+                            gameState = State.GameOver;
+                            break;
+                        }
+                        if (level != lastLevel)
+                        {
+                            gameState = State.LevelSplash;
+                        }
                         break;
                 }
                 case State.GameOver:
@@ -380,6 +415,11 @@ namespace Invaders
                             _spriteBatch.Draw(explosionTexture, explosions[i].Bounds, Color.White);
                         }
                         _spriteBatch.Draw(playerTexture, player.Position, Color.White);
+                        break;
+                    }
+                case State.LevelSplash:
+                    {
+
                         break;
                     }
             }
