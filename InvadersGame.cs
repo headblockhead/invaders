@@ -245,7 +245,8 @@ namespace Invaders
                 }
                 for (int j = 0; j < invaders.Count; j++)
                 {
-                    if (invaders[j].Bounds.Intersects(explosions[i].Bounds) && !invaders[j].Mutated)
+                    float distance = (invaders[j].Position - explosions[i].Position).LengthSquared();
+                    if (distance < MathF.Pow(explosions[i].Bounds.Width/2,2) && !invaders[j].Mutated)
                     {
                         if (random.Next(0, 128) == 0)
                         {
