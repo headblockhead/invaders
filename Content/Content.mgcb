@@ -79,3 +79,10 @@
 /processorParam:Quality=Best
 /build:playerShoot.wav
 
+#begin SourceCodePro.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:SourceCodePro.spritefont
+

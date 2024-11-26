@@ -176,13 +176,14 @@ namespace Invaders
         SoundEffect explosion;
         SoundEffect playerShoot;
 
+        SpriteFont font;
+
         int score = 0;
         int level = 0;
         int lives = 5;
         int[] levels = {
-            128,
-            256,
-            512,
+            1,
+            1024,
             4096
         };
 
@@ -220,6 +221,8 @@ namespace Invaders
             invaderDeath = Content.Load<SoundEffect>("invaderDeath");
             playerShoot = Content.Load<SoundEffect>("playerShoot");
             explosion = Content.Load<SoundEffect>("explosion");
+
+            font = Content.Load<SpriteFont>("SourceCodePro");
         }
 
         public void UpdateGame()
@@ -333,6 +336,10 @@ namespace Invaders
             {
                 player.FiredWeapon = false;
             }
+            if (invaders.Count == 0)
+            {
+                level++;
+            }
             player.Update();
         }
 
@@ -355,7 +362,7 @@ namespace Invaders
                 case State.LevelSplash:
                     {
                         splashUpdates++;
-                        if (splashUpdates > 2000)
+                        if (splashUpdates > 250)
                         {
                             lastLevel = level;
                             gameState = State.Game;
@@ -373,6 +380,11 @@ namespace Invaders
                         if (level != lastLevel)
                         {
                             gameState = State.LevelSplash;
+                            for (int i = 0; i < levels[level]; i++)
+                            {
+                                invaders.Add(new Invader(new Vector2((i % (Window.ClientBounds.Width / 16)) * 16, (i % Window.ClientBounds.Width / 16) * 4), new Vector2(2f, 0.4f), Window.ClientBounds, false));
+                            }
+                            splashUpdates = 0;
                         }
                         break;
                 }
@@ -419,7 +431,7 @@ namespace Invaders
                     }
                 case State.LevelSplash:
                     {
-
+                        _spriteBatch.DrawString(font, $"Level {level}", new Vector2(128, 128), Color.White);
                         break;
                     }
             }
