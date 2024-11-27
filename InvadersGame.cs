@@ -4,8 +4,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
-using System.Security.Cryptography;
 
 namespace Invaders
 { 
@@ -112,7 +110,7 @@ namespace Invaders
         {
             Bounds.Location = new Point((int)Position.X, (int)Position.Y);
             Position += Velocity;
-            if (Position.Y < 0)
+            if (Position.Y < -32)
             {
                 shouldDie = true;
             }
@@ -183,8 +181,7 @@ namespace Invaders
         int lives = 5;
         int[] levels = {
             1,
-            1024,
-            4096
+            5,
         };
 
         public InvadersGame()
@@ -409,7 +406,7 @@ namespace Invaders
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
             _spriteBatch.Begin(SpriteSortMode.Deferred,BlendState.AlphaBlend,SamplerState.LinearWrap, DepthStencilState.Default,RasterizerState.CullNone,null,null);
             switch (gameState)
             {
@@ -432,7 +429,8 @@ namespace Invaders
                     }
                 case State.LevelSplash:
                     {
-                        _spriteBatch.DrawString(font, $"Level {level}", new Vector2(128, 128), Color.White);
+                        string output = $"Level {level}";
+                        _spriteBatch.DrawString(font, output, new Vector2(Window.ClientBounds.Width / 2, Window.ClientBounds.Height / 2), Color.White, 0, font.MeasureString(output) / 2, 1, SpriteEffects.None, 1);
                         break;
                     }
             }
